@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Cloud Image Processor</title>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <style>
+    body { font-family: sans-serif; max-width: 600px; margin: 40px auto; padding: 20px; }
+    .card { border: 1px solid #ddd; padding: 20px; border-radius: 8px; }
+    button { background: #3ecf8e; color: white; border: none; padding: 10px 15px; border-radius: 4px; cursor: pointer; }
+    img { max-width: 100%; margin-top: 15px; border-radius: 6px; }
+  </style>
+</head>
+<body>
+  <div class="card">
+    <h2>Upload Image to Cloud</h2>
+    <input type="file" id="fileInput" accept="image/*" />
+    <button onclick="uploadImage()">Upload</button>
+    <p id="status"></p>
+    <div id="result"></div>
+  </div>
+
+  <script>
+    const SUPABASE_URL = 'https://fzxaqzgacgrznbibihqf.supabase.co';
+    const SUPABASE_ANON_KEY = 'sb_publishable_cQrHsdjAI5BRJLBT8pXlnQ_CTHoxCyL';
+    const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+    async function uploadImage() {
+      const fileInput = document.getElementById('fileInput');
+      const status = document.getElementById('status');
+      const result = document.getElementById('result');
+
+      if (!fileInput.files.length) {
+        status.innerText = 'Please select a file first.';
+        return;
+      }
+
+      const file = fileInput.files[0];
+      const filePath = `upload-${Date.now()}-${file.name}`;
+      status.innerText = 'Uploading...';
+
+      const { data, error } = await supabaseClient
+        .storage
+        .from('raw-images')
+        .upload(filePath, file);
+
+      if (error) {
+        status.innerText = 'Upload failed: ' + error.message;
+      } else {
+        const { data: publicData } = supabaseClient
+          .storage
+          .from('raw-images')
+          .getPublicUrl(filePath);
+
+        status.innerText = 'Upload Successful!';
+        result.innerHTML = `<p><strong>Public URL:</strong> <a href="${publicData.publicUrl}" target="_blank">View File</a></p><img src="${publicData.publicUrl}" />`;
+      }
+    }
+  </script>
+</body>
+</html>
